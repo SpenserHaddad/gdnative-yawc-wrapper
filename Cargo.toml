@@ -1,0 +1,19 @@
+[package]
+name = "gdnative-yawc-wrapper"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+flexi_logger = "0.31.10"
+futures = "0.3.34"
+gdnative = { git = "https://github.com/SpenserHaddad/gdnative.git", features=["async"], branch = "rust-2024-gdsteam-fixes", version = "0.11.3" }
+log = "0.4.34"
+thiserror = "2.0.20"
+tokio = "1.53.1"
+url = "2.5.8"
+yawc = "0.4.2"
