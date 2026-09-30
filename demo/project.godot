@@ -1,0 +1,95 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+_global_script_classes=[ {
+"base": "Object",
+"class": "ApBrotatoGameState",
+"language": "GDScript",
+"path": "res://ap/game_state.gd"
+}, {
+"base": "Object",
+"class": "ApTypes",
+"language": "GDScript",
+"path": "res://ap/ap_types.gd"
+}, {
+"base": "Node",
+"class": "ApWebSocketConnection",
+"language": "GDScript",
+"path": "res://ap/ap_websocket_connection.gd"
+}, {
+"base": "",
+"class": "BrotatoApClient",
+"language": "GDScript",
+"path": "res://ap/brotato_ap_client.gd"
+}, {
+"base": "Reference",
+"class": "BrotatoApConstants",
+"language": "GDScript",
+"path": "res://ap/constants.gd"
+}, {
+"base": "Node",
+"class": "GodotApClient",
+"language": "GDScript",
+"path": "res://ap/godot_ap_client.gd"
+}, {
+"base": "Object",
+"class": "GodotApClientDebugSettings",
+"language": "GDScript",
+"path": "res://ap/debug.gd"
+}, {
+"base": "Node",
+"class": "GodotApClientNew",
+"language": "GDScript",
+"path": "res://ApClient.gd"
+} ]
+_global_script_class_icons={
+"ApBrotatoGameState": "",
+"ApTypes": "",
+"ApWebSocketConnection": "",
+"BrotatoApClient": "",
+"BrotatoApConstants": "",
+"GodotApClient": "",
+"GodotApClientDebugSettings": "",
+"GodotApClientNew": ""
+}
+
+[application]
+
+config/name="GDNative Demo"
+run/main_scene="res://main.tscn"
+boot_splash/show_image=false
+config/icon="res://icon.png"
+
+[display]
+
+window/size/width=1920
+window/size/height=1080
+window/dpi/allow_hidpi=true
+
+[global]
+
+max=false
+
+[gui]
+
+common/drop_mouse_on_gui_input_disabled=true
+
+[network]
+
+limits/debugger_stdout/max_chars_per_second=1000000
+
+[physics]
+
+common/enable_pause_aware_picking=true
+
+[rendering]
+
+environment/default_clear_color=Color( 0.14902, 0.121569, 0.121569, 1 )
+environment/default_environment="res://default_env.tres"

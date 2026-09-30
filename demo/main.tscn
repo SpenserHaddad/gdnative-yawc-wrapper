@@ -1,0 +1,324 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://ap/ap_websocket_connection.gd" type="Script" id=1]
+[ext_resource path="res://ap/godot_ap_client.gd" type="Script" id=3]
+[ext_resource path="res://main.gd" type="Script" id=4]
+[ext_resource path="res://bin/async_executor.gdns" type="Script" id=5]
+
+[node name="Main" type="Node2D"]
+script = ExtResource( 4 )
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+margin_left = 30.0
+margin_top = 30.0
+margin_right = 1870.0
+margin_bottom = 1050.0
+size_flags_vertical = 3
+custom_constants/margin_right = -30
+custom_constants/margin_top = 10
+custom_constants/margin_left = 20
+custom_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+margin_left = 20.0
+margin_top = 10.0
+margin_right = 1870.0
+margin_bottom = 1010.0
+custom_constants/separation = 15
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+margin_right = 1850.0
+margin_bottom = 206.0
+size_flags_horizontal = 3
+custom_constants/separation = 15
+
+[node name="ConnectInfoVBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+margin_right = 230.0
+margin_bottom = 206.0
+custom_constants/separation = 15
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer"]
+margin_right = 230.0
+margin_bottom = 126.0
+custom_constants/vseparation = 10
+custom_constants/hseparation = 20
+columns = 2
+
+[node name="HostLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+margin_top = 5.0
+margin_right = 60.0
+margin_bottom = 19.0
+text = "Host"
+
+[node name="HostEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+unique_name_in_owner = true
+margin_left = 80.0
+margin_right = 230.0
+margin_bottom = 24.0
+rect_min_size = Vector2( 150, 0 )
+text = "localhost:38281"
+expand_to_text_length = true
+placeholder_text = "archipelago.gg:38281"
+
+[node name="SlotLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+margin_top = 39.0
+margin_right = 60.0
+margin_bottom = 53.0
+text = "Slot"
+
+[node name="SlotEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+unique_name_in_owner = true
+margin_left = 80.0
+margin_top = 34.0
+margin_right = 230.0
+margin_bottom = 58.0
+rect_min_size = Vector2( 150, 0 )
+text = "SpenserKH2"
+expand_to_text_length = true
+placeholder_text = "Player"
+
+[node name="GameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+margin_top = 73.0
+margin_right = 60.0
+margin_bottom = 87.0
+text = "Game"
+
+[node name="GameEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+unique_name_in_owner = true
+margin_left = 80.0
+margin_top = 68.0
+margin_right = 230.0
+margin_bottom = 92.0
+rect_min_size = Vector2( 150, 0 )
+text = "Kingdom Hearts 2"
+expand_to_text_length = true
+placeholder_text = "Player"
+
+[node name="PasswordLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+margin_top = 107.0
+margin_right = 60.0
+margin_bottom = 121.0
+text = "Password"
+
+[node name="PasswordEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/GridContainer"]
+unique_name_in_owner = true
+margin_left = 80.0
+margin_top = 102.0
+margin_right = 230.0
+margin_bottom = 126.0
+rect_min_size = Vector2( 150, 0 )
+expand_to_text_length = true
+placeholder_text = "Password"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer"]
+margin_top = 141.0
+margin_right = 230.0
+margin_bottom = 141.0
+text = "Ello?"
+
+[node name="ConnectButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer"]
+unique_name_in_owner = true
+margin_top = 156.0
+margin_right = 230.0
+margin_bottom = 176.0
+text = "Connect"
+
+[node name="ConnectStatus" type="RichTextLabel" parent="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer"]
+unique_name_in_owner = true
+margin_top = 191.0
+margin_right = 230.0
+margin_bottom = 206.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content_height = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+margin_left = 245.0
+margin_right = 502.0
+margin_bottom = 206.0
+
+[node name="CheckLocationsButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+margin_right = 257.0
+margin_bottom = 20.0
+text = "Check Selected Locations"
+
+[node name="MarkWonButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+margin_top = 24.0
+margin_right = 257.0
+margin_bottom = 44.0
+text = "Mark as Won"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+margin_top = 48.0
+margin_right = 257.0
+margin_bottom = 72.0
+
+[node name="SetDataStorageKeyEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+margin_right = 74.0
+margin_bottom = 24.0
+custom_constants/minimum_spaces = 16
+
+[node name="SetDataStorageKeyButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+margin_left = 78.0
+margin_right = 254.0
+margin_bottom = 24.0
+hint_tooltip = "Set the DataStorage entry \"big_string\" to the indicated number of zeros"
+text = "Set DataStorage Keys Size"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+margin_top = 76.0
+margin_right = 257.0
+margin_bottom = 100.0
+
+[node name="GetDataStorageKeyEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer3"]
+unique_name_in_owner = true
+margin_right = 74.0
+margin_bottom = 24.0
+custom_constants/minimum_spaces = 16
+editable = false
+
+[node name="GetDataStorageKeyButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer3"]
+margin_left = 78.0
+margin_right = 257.0
+margin_bottom = 24.0
+text = "Get DataStorage Keys Size"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+margin_top = 221.0
+margin_right = 1850.0
+margin_bottom = 1000.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/separation = 30
+
+[node name="VBoxContainer3" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+margin_right = 595.0
+margin_bottom = 779.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer3"]
+margin_right = 595.0
+margin_bottom = 14.0
+text = "Locations"
+align = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer3"]
+margin_top = 18.0
+margin_right = 595.0
+margin_bottom = 775.0
+size_flags_vertical = 3
+scroll_horizontal_enabled = false
+
+[node name="LocationsList" type="ItemList" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer3/ScrollContainer"]
+unique_name_in_owner = true
+margin_right = 595.0
+margin_bottom = 757.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+select_mode = 1
+fixed_icon_size = Vector2( 10, 10 )
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer3"]
+margin_top = 779.0
+margin_right = 595.0
+margin_bottom = 779.0
+
+[node name="VBoxContainer4" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+margin_left = 625.0
+margin_right = 1220.0
+margin_bottom = 779.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer4"]
+margin_right = 595.0
+margin_bottom = 14.0
+text = "Items"
+align = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer4"]
+margin_top = 18.0
+margin_right = 595.0
+margin_bottom = 779.0
+size_flags_vertical = 3
+scroll_horizontal_enabled = false
+
+[node name="ItemsList" type="ItemList" parent="MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer4/ScrollContainer"]
+unique_name_in_owner = true
+margin_right = 595.0
+margin_bottom = 761.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+fixed_icon_size = Vector2( 10, 10 )
+
+[node name="MessagesVBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+margin_left = 1250.0
+margin_right = 1850.0
+margin_bottom = 779.0
+rect_min_size = Vector2( 600, 40 )
+size_flags_horizontal = 8
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer"]
+margin_right = 600.0
+margin_bottom = 14.0
+text = "Log"
+align = 1
+
+[node name="MessageLog" type="RichTextLabel" parent="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer"]
+unique_name_in_owner = true
+margin_top = 18.0
+margin_right = 600.0
+margin_bottom = 751.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer"]
+margin_top = 755.0
+margin_right = 600.0
+margin_bottom = 779.0
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer/HBoxContainer"]
+visible = false
+margin_top = 5.0
+margin_right = 35.0
+margin_bottom = 19.0
+text = "Send:"
+
+[node name="SendMessageEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+margin_right = 553.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+editable = false
+
+[node name="SendMessageButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+margin_left = 557.0
+margin_right = 600.0
+margin_bottom = 24.0
+disabled = true
+text = "Send"
+
+[node name="ApWebSocketConnection" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource( 1 )
+
+[node name="GodotApClient" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource( 3 )
+
+[node name="AsyncExecutorDriver" type="Node" parent="."]
+script = ExtResource( 5 )
+
+[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/ConnectInfoVBoxContainer/ConnectButton" to="." method="_on_ConnectButton_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/CheckLocationsButton" to="." method="_on_CheckLocationsButton_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/SetDataStorageKeyButton" to="." method="_on_SetDataStorageKeyButton_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer3/GetDataStorageKeyButton" to="." method="_on_GetDataStorageKeyButton_pressed"]
+[connection signal="text_changed" from="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer/HBoxContainer/SendMessageEdit" to="." method="_on_SendMessageEdit_text_changed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer2/MessagesVBoxContainer/HBoxContainer/SendMessageButton" to="." method="_on_SendMessageButton_pressed"]

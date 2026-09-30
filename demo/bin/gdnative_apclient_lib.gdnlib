@@ -1,0 +1,14 @@
+[general]
+
+singleton=false
+load_once=false
+symbol_prefix="godot_"
+reloadable=true
+
+[entry]
+
+X11.64="res://bin/x11/libgd3_apclient2.so"
+
+[dependencies]
+
+X11.64=[  ]
