@@ -9,27 +9,28 @@ use log::LevelFilter;
 pub struct GodotLogWriter {}
 
 impl LogWriter for GodotLogWriter {
-    fn write(&self, _now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
+    fn write(&self, now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
         match record.level() {
-            // Optionally push the Warnings to the godot_error! macro to display as an error in the Godot editor.
             flexi_logger::Level::Error => godot_error!(
-                "{}:{} -- {}",
+                "({}) {}:{} -- {}",
+                now.format_rfc3339(),
                 record.level(),
                 record.target(),
-                record.args()
+                record.args(),
             ),
-            // Optionally push the Warnings to the godot_warn!  macro to display as a warning in the Godot editor.
             flexi_logger::Level::Warn => godot_warn!(
-                "{}:{} -- {}",
+                "({}) {}:{} -- {}",
+                now.format_rfc3339(),
                 record.level(),
                 record.target(),
-                record.args()
+                record.args(),
             ),
             _ => godot_print!(
-                "{}:{} -- {}",
+                "({}) {}:{} -- {}",
+                now.format_rfc3339(),
                 record.level(),
                 record.target(),
-                record.args()
+                record.args(),
             ),
         };
         Ok(())
