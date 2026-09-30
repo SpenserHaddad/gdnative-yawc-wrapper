@@ -7,6 +7,12 @@ pub enum Error {
     #[error("Command run when not connected to server")]
     NotConnected,
 
+    #[error("Cannot change connection settings while connected.")]
+    ChangeSettingsWhileConnected,
+
+    #[error("Connection closed unexpectedly")]
+    ConnectionClosed,
+
     #[error("Invalid URL: {0}")]
     UrlError(#[from] url::ParseError),
 
@@ -15,6 +21,9 @@ pub enum Error {
 
     #[error("Connection error")]
     ConnectionError(#[from] LocalCellError),
+
+    #[error("Failed to parse UTF-8: {0}")]
+    Utf8Error(#[from] std::str::Utf8Error),
 }
 
 impl ToVariant for Error {
