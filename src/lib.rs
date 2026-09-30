@@ -1,5 +1,6 @@
 use crate::async_executor::{AsyncExecutorDriver, EXECUTOR};
 use crate::logger::GodotLogWriter;
+use crate::ws::GodotWebsocket;
 use flexi_logger::LogSpecBuilder;
 use gdnative::{init::InitializeInfo, prelude::*};
 
@@ -20,7 +21,7 @@ impl GDNativeCallbacks for GdnativeWebsocketLibrary {
             logging_initialized = INITIALIZED_LOGGING;
         }
         if !logging_initialized {
-            godot_dbg!("Initializing gdnative-rust logging.");
+            godot_dbg!("Initializing gdnative-yawc-wrapper logging.");
             let mut log_spec_builder = LogSpecBuilder::new();
             let log_spec = log_spec_builder.default(log::LevelFilter::Debug).build();
             let result = flexi_logger::Logger::with(log_spec)
@@ -37,10 +38,11 @@ impl GDNativeCallbacks for GdnativeWebsocketLibrary {
         }
     }
     fn nativescript_init(handle: InitHandle) {
+        log::info!("Initializing nativescript");
         gdnative::tasks::register_runtime(&handle);
         gdnative::tasks::set_executor(EXECUTOR.with(|e| *e));
 
+        handle.add_class::<GodotWebsocket>();
         handle.add_class::<AsyncExecutorDriver>();
-        // handle.add_class::<HelloWorld>();
     }
 }
