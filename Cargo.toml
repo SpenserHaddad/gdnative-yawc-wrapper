@@ -11,9 +11,9 @@ crate-type = ["cdylib"]
 [dependencies]
 flexi_logger = "0.31.10"
 futures = "0.3.34"
-gdnative = { git = "https://github.com/SpenserHaddad/gdnative.git", features=["async"], branch = "rust-2024-gdsteam-fixes", version = "0.11.3" }
+gdnative = { git = "https://github.com/SpenserHaddad/gdnative.git", features=["async", "custom-godot"], branch = "rust-2024-gdsteam-fixes", version = "0.11.3" }
 log = "0.4.34"
 thiserror = "2.0.20"
-tokio = "1.53.1"
+tokio = {version = "1.53.1", features = ["sync"]}
 url = "2.5.8"
 yawc = "0.4.2"
