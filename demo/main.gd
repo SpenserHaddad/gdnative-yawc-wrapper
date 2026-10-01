@@ -30,19 +30,6 @@ var _item_info: Dictionary = Dictionary()
 
 
 func _ready():
-	var gdn = GDNative.new()
-	gdn.library = load("res://bin/gdnative_yawc_wrapper_lib.gdnlib")
-	gdn.initialize()
-	
-	var ws_script = NativeScript.new()
-	ws_script.set_library(gdn.library)
-	ws_script.set_class_name("GodotWebsocket")
-	
-	var _websocket = ws_script.new()
-	
-	print("Setup GodotWebsocket, get_connection_status is %s" % [_websocket.get_connection_status()])
-	
-	_connection.set_websocket(_websocket)
 	_apClient.set_client(_connection)
 	update_connect_status(_apClient.connect_state)
 	var status = _apClient.connect("connection_state_changed", self, "_on_ap_connection_state_changed")

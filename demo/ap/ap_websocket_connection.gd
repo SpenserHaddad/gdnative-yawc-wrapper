@@ -20,6 +20,8 @@ var _client
 var _url: String
 var _waiting_to_connect_to_server = null
 
+var _websocket_factory
+
 var connection_state = State.STATE_CLOSED
 
 signal connection_state_changed
@@ -38,15 +40,21 @@ signal on_set_reply
 
 signal _stop_waiting_to_connect(success)
 
-# func _init(websocket):
-# 	_client = websocket
-
 func _ready():
 	# Always process so we don't disconnect if the game is paused for too long.
 	pause_mode = Node.PAUSE_MODE_PROCESS
+	var gdn = GDNative.new()
+	gdn.library = load("res://bin/gdnative_yawc_wrapper_lib.gdnlib")
+	gdn.initialize()
+
+	var factory_script = NativeScript.new()
+	factory_script.set_library(gdn.library)
+	factory_script.set_class_name("GodotWebsocketFactory")
+
+	_websocket_factory = factory_script.new()
 
 # Public API
-func set_websocket(websocket):
+func _set_websocket(websocket):
 	if self._client != null:
 		# Disconnect signals from the old client reference
 		self._client.disconnect("connection_closed", self, "_on_connection_closed")
@@ -61,8 +69,7 @@ func set_websocket(websocket):
 	_result = self._client.connect("connection_established", self, "_on_connection_established")
 	_result = self._client.connect("connection_error", self, "_on_connection_error")
 
-	_result = _client.set_buffers(80 * 1024 * 1024, 80 * 1024 * 1024)
-
+#	_result = _client.set_buffers(80 * 1024 * 1024, 80 * 1024 * 1024)
 
 func connect_to_server(server: String) -> bool:
 	if connection_state == State.STATE_OPEN:
@@ -86,18 +93,13 @@ func connect_to_server(server: String) -> bool:
 	var wss_url = "wss://%s" % [server]
 
 	# Create a timeout to trigger the done waiting signal if we take too long
-#	_init_client()
 	_waiting_to_connect_to_server = wss_url
-#	_make_connection_timeout(wss_url)
-	var wss_connect_async_state = _client.connect_to_url(wss_url) # Return value is useless
+	var wss_connect_async_state = _websocket_factory.connect_to_url(wss_url)
 
 	var wss_connect_result = yield(wss_connect_async_state, "completed")
 	var wss_connect_error = wss_connect_result.get("Err", null)
 	var wss_success = wss_connect_error == null
 	print("wss_success: %s, error: %s" % [wss_success, wss_connect_error])
-
-	# var wss_success = yield (self, "_stop_waiting_to_connect")
-	# _waiting_to_connect_to_server = null
 
 	var ws_success = false
 	if not wss_success:
@@ -106,26 +108,23 @@ func connect_to_server(server: String) -> bool:
 		# "ws://" instead.
 		print("Connecting with WSS failed, trying WS.")
 		var ws_url = "ws://%s" % [server]
-#		_init_client()
 		_waiting_to_connect_to_server = ws_url
-#		_make_connection_timeout(ws_url)
-		var ws_connect_async_state = _client.connect_to_url(ws_url)
+		var ws_connect_async_state = _websocket_factory.connect_to_url(ws_url)
 
 		var ws_connect_result = yield(ws_connect_async_state, "completed")
 		var ws_connect_error = ws_connect_result.get("Err", null)
 		ws_success = ws_connect_error == null
 		print("ws_success: %s, error: %s" % [ws_success, ws_connect_error])
 
-		# ws_success = yield (self, "_stop_waiting_to_connect")
 		_waiting_to_connect_to_server = null
 		if ws_success:
 			_url = ws_url
+			_set_websocket(ws_connect_result["Ok"])
 	else:
 		_url = wss_url
+		_set_websocket(wss_connect_result["Ok"])
 
 	if wss_success or ws_success:
-		# _peer = _client.get_peer(1)
-		# _peer.set_write_mode(WebSocketPeer.WRITE_MODE_TEXT)
 		_set_connection_state(State.STATE_OPEN)
 		print("Connected to multiworld %s." % _url)
 
