@@ -121,18 +121,6 @@ pub struct GodotWebsocket {
     outbound_tx: tokio::sync::mpsc::UnboundedSender<Frame>,
 }
 
-// impl ToVariant for GodotWebsocket {
-//     fn to_variant(&self) -> Variant {
-//         struct Output {
-//             url: String,
-//         }
-//         let o = Output {
-//             url: self.url.to_string(),
-//         };
-//         Variant::from(o)`
-//     }
-// }
-
 #[methods]
 impl GodotWebsocket {
     fn register_signals(builder: &ClassBuilder<Self>) {
@@ -149,35 +137,6 @@ impl GodotWebsocket {
     fn get_connection_status(&self) -> bool {
         true
     }
-
-    // #[method(async)]
-    // fn connect_to_url(
-    //     #[self] this: Instance<Self>,
-    //     url: String,
-    // ) -> impl std::future::Future<Output = Result<(), Error>> + 'static {
-    //     log::info!("Connecting to URL: {}", url);
-
-    //     async move {
-    //         let url = url.parse::<url::Url>()?;
-
-    //         let options = unsafe { this.assume_safe() }.map(|s, _| s.ws_options.clone())?;
-    //         let ws = WebSocket::connect(url).with_options(options).await?;
-
-    //         log::info!("Websocket Connected");
-    //         let (inbound_tx, inbound_rx) = tokio::sync::mpsc::unbounded_channel();
-    //         let (outbound_tx, outbound_rx) = tokio::sync::mpsc::unbounded_channel();
-    //         let job = tokio::task::spawn(websocket_read_write(ws, inbound_tx, outbound_rx));
-    //         unsafe { this.assume_safe() }.map_mut(|s, _| {
-    //             if let Some(ref job) = s.ws_job {
-    //                 job.abort();
-    //             }
-    //             s.ws_job = Some(job);
-    //             s.inbound_rx = Some(inbound_rx);
-    //             s.outbound_tx = Some(outbound_tx)
-    //         })?;
-    //         Ok(())
-    //     }
-    // }
 
     #[method]
     fn disconnect_from_host(&self) -> Result<(), Error> {
