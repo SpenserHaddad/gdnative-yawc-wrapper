@@ -78,7 +78,7 @@ var hint_points: int
 var player_tags: Array = []
 
 var room_info: Dictionary
-var data_package: ApDataPackage
+var data_package: Dictionary
 
 signal _received_connect_response(message)
 ## Sent when the connection status to the server changes.
@@ -93,6 +93,8 @@ signal data_storage_updated(key, new_value, original_value)
 signal room_updated(updated_room_info)
 ## Emitted when a `Bounced` packet is received. Contains the packet's data.
 signal bounced_received(bounced_data)
+## Emitted when a `Print` packet is received. Contains the packet's data.
+signal print_received(print_data)
 
 # func _init(websocket_client_):
 	#
@@ -113,6 +115,7 @@ func set_client(client):
 	_status = websocket_client.connect("on_retrieved", self , "_on_retrieved")
 	_status = websocket_client.connect("on_room_update", self , "_on_room_update")
 	_status = websocket_client.connect("on_bounced", self , "_on_bounced_received")
+	_status = websocket_client.connect("on_print_json", self, "_on_print_received")
 
 func _connected_or_connection_refused_received(message: Dictionary):
 	emit_signal("_received_connect_response", message)
@@ -175,11 +178,14 @@ func connect_to_multiworld(get_data_package: bool = true) -> int:
 
 		# 3. Client may send a GetDataPackage packet.
 		if get_data_package:
-			print("Waiting for data pacakge")
-			websocket_client.get_data_package([game])
+			print("Waiting for data packages")
+			websocket_client.get_data_package(room_info.games)
 			# 4. Server sends a DataPackage packet in return. (If the client sent GetDataPackage.)
 			var data_package_message = yield (websocket_client, "on_data_package")
-			data_package = ApDataPackage.new(data_package_message["data"]["games"][ self.game])
+			print("Received data packages with %d games" % len(data_package_message["data"]["games"]))
+			data_package = Dictionary()
+			for game in data_package_message["data"]["games"]:
+				data_package[game] = ApDataPackage.new(data_package_message["data"]["games"][game])
 
 	# 5. Client sends Connect packet in order to authenticate with the server.
 	# 6. Server validates the client's packet and responds with Connected or
@@ -268,10 +274,23 @@ func set_status(status: int):
 	# TODO: bounds checking
 	websocket_client.status_update(status)
 
-func check_location(location_id: int):
+func player_data_package():
+	# Returns the data package for the player's game, or null if not connected or the
+	# data is not loaded.
+	#
+	# This is a shorthand for "self.data_package[self.game]"
+	if self.connect_state == ConnectState.CONNECTED_TO_MULTIWORLD and self.data_package != null:
+		return self.data_package[self.game]
+	return null
+
+func check_location(location_id):
 	## Send a `LocationChecks` packet with the provided location ID(s).
 	## A single integer/location ID will be wrapped in an array berfore sending.
-	websocket_client.send_location_checks([location_id])
+	if typeof(location_id) == TYPE_INT:
+		websocket_client.send_location_checks([location_id])
+	else:
+		# Assume array
+		websocket_client.send_location_checks(location_id)
 
 func get_value(keys: Array):
 	## Send a `Get` packet to query the server's data storage.
@@ -342,7 +361,7 @@ func _on_received_items(command):
 	for item in items:
 		var item_name = null
 		if self.data_package:
-			item_name = data_package.item_id_to_name[item["item"]]
+			item_name = data_package[self.game].item_id_to_name[item["item"]]
 		else:
 			print("Received item when data package was not loaded")
 		print("Received item '%s'" % item_name)
@@ -354,7 +373,8 @@ func _on_retrieved(command):
 		emit_signal(
 			"data_storage_updated",
 			key,
-			command["keys"][key]
+			command["keys"][key],
+			null
 		)
 
 func _on_room_update(command: Dictionary):
@@ -374,7 +394,7 @@ func _on_set_reply(command):
 	)
 
 func _on_bounced_received(bounced_data: Dictionary):
-	emit_signal(
-		"bounced_received",
-		bounced_data
-	)
+	emit_signal("bounced_received", bounced_data)
+
+func _on_print_received(print_data: Dictionary):
+	emit_signal("print_received", print_data)
