@@ -1,6 +1,6 @@
 use crate::async_executor::{AsyncExecutorDriver, EXECUTOR};
 use crate::logger::GodotLogWriter;
-use crate::ws::GodotWebsocket;
+use crate::ws::{GodotWebsocket, GodotWebsocketFactory};
 use flexi_logger::LogSpecBuilder;
 use gdnative::{init::InitializeInfo, prelude::*};
 
@@ -43,6 +43,7 @@ impl GDNativeCallbacks for GdnativeWebsocketLibrary {
         gdnative::tasks::set_executor(EXECUTOR.with(|e| *e));
 
         handle.add_class::<GodotWebsocket>();
+        handle.add_class::<GodotWebsocketFactory>();
         handle.add_class::<AsyncExecutorDriver>();
     }
 }
