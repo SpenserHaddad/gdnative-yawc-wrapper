@@ -1,8 +1,7 @@
 [package]
 name = "gdnative-yawc-wrapper"
 version = "0.1.0"
-edition = "2021"
-rust-version = "1.70"
+edition = "2024"
 publish = false
 
 [lib]
