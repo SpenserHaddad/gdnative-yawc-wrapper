@@ -11,7 +11,6 @@ enum State {
 # Hard-code mod name to avoid cyclical dependency
 const LOG_NAME = "RampagingHippy-Archipelago/ap_websocket_connection"
 const _DEFAULT_PORT = 38281
-const _CONNECT_TIMEOUT_SECONDS = 5
 
 # The client handles connecting to the server, and the peer handles sending/receiving
 # data after connecting. We set the peer in the "_on_connection_established" callback,
@@ -38,8 +37,6 @@ signal on_invalid_packet
 signal on_retrieved
 signal on_set_reply
 
-signal _stop_waiting_to_connect(success)
-
 func _ready():
 	# Always process so we don't disconnect if the game is paused for too long.
 	pause_mode = Node.PAUSE_MODE_PROCESS
@@ -53,34 +50,22 @@ func _ready():
 
 	_websocket_factory = factory_script.new()
 
-# Public API
 func _set_websocket(websocket):
 	if self._client != null:
 		# Disconnect signals from the old client reference
 		self._client.disconnect("connection_closed", self, "_on_connection_closed")
 		self._client.disconnect("data_received", self, "_on_data_received")
-		self._client.disconnect("connection_established", self, "_on_connection_established")
-		self._client.disconnect("connection_error", self, "_on_connection_error")
 	self._client = websocket
 
 	# Connect base signals to get notified of connection open, close, and errors.
 	var _result = self._client.connect("connection_closed", self, "_on_connection_closed")
 	_result = self._client.connect("data_received", self, "_on_data_received")
-	_result = self._client.connect("connection_established", self, "_on_connection_established")
-	_result = self._client.connect("connection_error", self, "_on_connection_error")
 
-#	_result = _client.set_buffers(80 * 1024 * 1024, 80 * 1024 * 1024)
-
+# Public API
 func connect_to_server(server: String) -> bool:
 	if connection_state == State.STATE_OPEN:
 		return true
 	_set_connection_state(State.STATE_CONNECTING)
-
-	# TODO: It would be nice to move a lot of this into a separate factory class so we
-	# didn't have to duplicate code for the WSS and WS cases, and so we don't have
-	# methods that all only called a specific times which could otherwise be discarded.
-	# But, my one attempt at doing so led to weird cases where the WS client didn't
-	# correctly perform the handshake with the server.
 
 	# Use the default Archipelago port if not included in the URL
 	var port_check_pattern = RegEx.new()
@@ -93,13 +78,12 @@ func connect_to_server(server: String) -> bool:
 	var wss_url = "wss://%s" % [server]
 
 	# Create a timeout to trigger the done waiting signal if we take too long
-	_waiting_to_connect_to_server = wss_url
-	var wss_connect_async_state = _websocket_factory.connect_to_url(wss_url)
+	var wss_connect_state = _inner_connect(wss_url)
+	var wss_result = yield(wss_connect_state, "completed")
 
-	var wss_connect_result = yield(wss_connect_async_state, "completed")
-	var wss_connect_error = wss_connect_result.get("Err", null)
-	var wss_success = wss_connect_error == null
-	print("wss_success: %s, error: %s" % [wss_success, wss_connect_error])
+	var wss_success = wss_result[0]
+	var wss_connect_error = wss_result[1]
+	print("WSS Connect success: %s, error: %s" % [wss_success, wss_connect_error])
 
 	var ws_success = false
 	if not wss_success:
@@ -108,27 +92,38 @@ func connect_to_server(server: String) -> bool:
 		# "ws://" instead.
 		print("Connecting with WSS failed, trying WS.")
 		var ws_url = "ws://%s" % [server]
-		_waiting_to_connect_to_server = ws_url
-		var ws_connect_async_state = _websocket_factory.connect_to_url(ws_url)
-
-		var ws_connect_result = yield(ws_connect_async_state, "completed")
-		var ws_connect_error = ws_connect_result.get("Err", null)
-		ws_success = ws_connect_error == null
-		print("ws_success: %s, error: %s" % [ws_success, ws_connect_error])
-
-		_waiting_to_connect_to_server = null
+		var ws_connect_state = _inner_connect(ws_url)
+		var ws_result = yield(ws_connect_state, "completed")
+		ws_success = ws_result[0]
+		var ws_connect_error = ws_result[1]
+		print("WS Connect success: %s, error: %s" % [ws_success, ws_connect_error])
 		if ws_success:
 			_url = ws_url
-			_set_websocket(ws_connect_result["Ok"])
+			_set_websocket(ws_result[2])
 	else:
 		_url = wss_url
-		_set_websocket(wss_connect_result["Ok"])
+		_set_websocket(wss_result[2])
 
 	if wss_success or ws_success:
 		_set_connection_state(State.STATE_OPEN)
 		print("Connected to multiworld %s." % _url)
 
 	return wss_success or ws_success
+
+func _inner_connect(url: String) -> Array:
+	# Calls the websocket factory with the given URL and extracts the results.
+	# Returns a 3-element array of:
+	#     * Success (bool)
+	#     * The error message. Null if success is true.
+	#     * The websocket object. Null if success is false.
+	print("Connecting to %s" % url)
+	var connect_state = _websocket_factory.connect_to_url(url)
+	var connect_result = yield(connect_state, "completed")
+	var connect_error = connect_result.get("Err", null)
+	var connect_success = connect_error == null
+	var connect_websocket = connect_result.get("Ok", null)
+	print("Connecting result: %s" % connect_error)
+	return [connect_success, connect_error, connect_websocket]
 
 func connected_to_server() -> bool:
 	return connection_state == State.STATE_OPEN
@@ -248,15 +243,13 @@ func set_notify(keys: Array):
 func _on_connection_established(_proto = ""):
 	# We succeeded, stop waiting and tell the caller.
 	print("Successfully connected.")
-	emit_signal("_stop_waiting_to_connect", true)
 
 func _on_connection_error():
 	# We failed, stop waiting and tell the caller.
 	print("Connection error.")
-	emit_signal("_stop_waiting_to_connect", false)
 
-func _on_connection_closed(was_clean = false):
-	print("AP connection closed, clean: %s." % was_clean)
+func _on_connection_closed(reason: String):
+	print("AP connection closed, reason: %s" % reason)
 	_set_connection_state(State.STATE_CLOSED)
 	# _peer = null
 
@@ -271,70 +264,21 @@ func _on_data_received(received_data_str: String):
 	if received_data.result == null:
 		print("Failed to parse JSON for %s" % received_data_str)
 		return
-#	ModLoaderLog.debug("Received payload with size %d" % received_data_str.length(), LOG_NAME)
 	for command in received_data.result:
 		_handle_command(command)
 
 # Internal plumbing
 func _send_command(args: Dictionary):
-#	if args['cmd'] == 'Set':
-#		ModLoaderLog.debug("Sending %s command for %s" % [args['cmd'], args['key']], LOG_NAME)
-#	else:
-#		ModLoaderLog.debug("Sending %s command" % args['cmd'], LOG_NAME)
+	if args['cmd'] == 'Set':
+		print("Sending %s command for %s" % [args['cmd'], args['key']])
+	else:
+		print("Sending %s command" % args['cmd'])
 	var command_str = JSON.print([args])
-	_client.send(command_str)
-	# if _peer != null:
-	# 	var result = _peer.put_packet(command_str.to_utf8())
-	# 	if result != 0:
-	# 		var gpe = _peer.get_packet_error()
-	# 		var client_state = _client.get_connection_status()
-	# 		print("Failed to send command, put_packet response is %d, gpe is %d, client_status is %s" % [result, gpe, client_state])
-	# else:
-	# 	print("Peer is null!")
-
-#func _init_client():
-#	if self._client != null:
-#		# Disconnect signals from the old client reference
-#		self._client.disconnect("connection_closed", self, "_on_connection_closed")
-#		self._client.disconnect("data_received", self, "_on_data_received")
-#		self._client.disconnect("connection_established", self, "_on_connection_established")
-#		self._client.disconnect("connection_error", self, "_on_connection_error")
-#	self._client = WebSocketClient.new()
-#
-#	# Connect base signals to get notified of connection open, close, and errors.
-#	var _result = self._client.connect("connection_closed", self, "_on_connection_closed")
-#	_result = self._client.connect("data_received", self, "_on_data_received")
-#	_result = self._client.connect("connection_established", self, "_on_connection_established")
-#	_result = self._client.connect("connection_error", self, "_on_connection_error")
-
-	# Increase max buffer size to accommodate AP's larger payloads. The args
-	# and their defaults are:
-	#	- input_buffer_size_kb = 64 KB
-	#	- input_max_packets = 1024
-	#	- output_buffer_size_kb = 64 KB
-	#	- output_max_packets = 1024
-	# We increase the input buffer to 80 MB because some messages we receive
-	# are too large	for 64K. It's huge, but it being too small has caused some
-	# nasty bugs in the past. The other defaults have been fine though.
-	# Hopefully once the compression update propagates we can turn this down to
-	# like ~5 MB.
-	# NOTE: Godot will silently drop packets that do not fit in the buffer! This
-	# can cause the WebSocket connection to time out because the messaging is
-	# not complete. If the game mysteriously drops the connection a few seconds
-	# after connecting, the buffer likely needs to be larger.
-#	_result = _client.set_buffers(1024 * 80, 2048, 1024 * 80, 2048)
-#	if _result:
-#		print("Failed to set buffer sizes with error %d" % _result)
-
-	# self._peer = null
-
-func _make_connection_timeout(for_url: String):
-	yield (get_tree().create_timer(_CONNECT_TIMEOUT_SECONDS), "timeout")
-	if _waiting_to_connect_to_server == for_url:
-		# We took to long, stop waiting and tell the called we failed.
-		_waiting_to_connect_to_server = false
-		print("Timed out trying to connect.")
-		emit_signal("_stop_waiting_to_connect", false)
+	var send_state = _client.send(command_str)
+	var result = yield(send_state, 'completed')
+	if result.has("Err"):
+		var error = result["Err"]
+		print("Failed to send command: %s" % error)
 
 func _set_connection_state(state):
 	var state_name = State.keys()[state]
