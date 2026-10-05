@@ -24,6 +24,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Download Godot
+      shell: bash
       run: python tools/download_godot.py $GODOT_STEAM_VERSION
 
     - name: Add godotsteam to path
