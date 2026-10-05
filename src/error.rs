@@ -11,7 +11,7 @@ pub enum Error {
     ChangeSettingsWhileConnected,
 
     #[error("Connection closed unexpectedly")]
-    _ConnectionClosed,
+    ConnectionClosed,
 
     #[error("Could not enqueue a frame to send: {0}")]
     SendFrameError(#[from] tokio::sync::mpsc::error::SendError<yawc::Frame>),

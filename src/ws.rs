@@ -2,7 +2,9 @@ use crate::error::Error;
 use futures::SinkExt;
 use gdnative::core_types::VariantType::GodotString as GodotStringVariant;
 use gdnative::prelude::*;
+use std::rc::Rc;
 use tokio::{sync::mpsc::error::TryRecvError, task::JoinHandle};
+use tokio_util::sync::CancellationToken;
 use yawc::{Frame, MaybeTlsStream, Options, WebSocket};
 
 extern crate alloc;
@@ -14,6 +16,7 @@ async fn websocket_read_write(
     mut ws: WebSocket<MaybeTlsStream<tokio::net::TcpStream>>,
     inbound_tx: tokio::sync::mpsc::UnboundedSender<Frame>,
     mut outbound_rx: tokio::sync::mpsc::UnboundedReceiver<Frame>,
+    cancellation_token: CancellationToken,
 ) -> Result<(), Error> {
     log::info!("Starting WS Tx/Rx loop.");
     loop {
@@ -41,6 +44,11 @@ async fn websocket_read_write(
                         Err(_) => (),
                     }
                 }
+            }
+
+            _ = cancellation_token.cancelled() => {
+                log::info!("Cancellation token cancelled");
+                break;
             }
         }
     }
@@ -85,12 +93,20 @@ impl GodotWebsocketFactory {
             log::info!("Websocket Connected");
             let (inbound_tx, inbound_rx) = tokio::sync::mpsc::unbounded_channel();
             let (outbound_tx, outbound_rx) = tokio::sync::mpsc::unbounded_channel();
-            let job = tokio::task::spawn(websocket_read_write(ws, inbound_tx, outbound_rx));
+            let cancellation_token = tokio_util::sync::CancellationToken::new();
+            let job = tokio::task::spawn(websocket_read_write(
+                ws,
+                inbound_tx,
+                outbound_rx,
+                cancellation_token.clone(),
+            ));
             let ws = GodotWebsocket {
                 url: url,
                 inbound_rx: inbound_rx,
                 outbound_tx: outbound_tx,
-                ws_job: job,
+                ws_job: Rc::new(job),
+                cancellation_token: cancellation_token,
+                connected: true,
             };
             Ok(ws.emplace().into_shared())
         }
@@ -113,20 +129,25 @@ impl GodotWebsocketFactory {
 pub struct GodotWebsocket {
     #[variant(to_variant_with = "url::Url::to_string")]
     url: url::Url,
+    #[property(get)]
+    connected: bool,
     #[variant(skip)]
-    ws_job: JoinHandle<Result<(), Error>>,
+    ws_job: Rc<JoinHandle<Result<(), Error>>>,
     #[variant(skip)]
     inbound_rx: tokio::sync::mpsc::UnboundedReceiver<Frame>,
     #[variant(skip)]
     outbound_tx: tokio::sync::mpsc::UnboundedSender<Frame>,
+    #[variant(skip)]
+    cancellation_token: tokio_util::sync::CancellationToken,
 }
 
 #[methods]
 impl GodotWebsocket {
     fn register_signals(builder: &ClassBuilder<Self>) {
-        builder.signal("connection_closed").done();
-        builder.signal("connection_established").done();
-        builder.signal("connection_error").done();
+        builder
+            .signal("connection_closed")
+            .with_param("reason", GodotStringVariant)
+            .done();
         builder
             .signal("data_received")
             .with_param("data", GodotStringVariant)
@@ -134,14 +155,9 @@ impl GodotWebsocket {
     }
 
     #[method]
-    fn get_connection_status(&self) -> bool {
-        true
-    }
-
-    #[method]
-    fn disconnect_from_host(&self) -> Result<(), Error> {
-        if !self.ws_job.is_finished() {
-            self.ws_job.abort();
+    fn disconnect_from_host(&mut self, #[base] owner: &Reference) -> Result<(), Error> {
+        if self.connected {
+            self._close_connection(owner, "Disconnect requested");
             Ok(())
         } else {
             Err(Error::NotConnected)
@@ -150,7 +166,7 @@ impl GodotWebsocket {
 
     #[method]
     fn set_write_mode(&self, _mode: String) -> Result<(), Error> {
-        match self.get_connection_status() {
+        match self.connected {
             true => Err(Error::ChangeSettingsWhileConnected),
             false => Ok(()),
         }
@@ -164,14 +180,24 @@ impl GodotWebsocket {
         log::info!("Sending command");
         async move {
             log::info!("(Send) Getting queue...");
-            unsafe { this.assume_safe() }.map_mut(|s, _| {
-                log::info!("(Send) Enqueuing frame");
-                let frame = Frame::text(data);
-                s.outbound_tx.send(frame)?;
-                log::info!("(Send) Enqueued frame");
-                Ok(())
+            unsafe { this.assume_safe() }.map_mut(|s, _| match s.connected {
+                true => {
+                    log::info!("(Send) Enqueuing frame");
+                    let frame = Frame::text(data);
+                    s.outbound_tx.send(frame)?;
+                    log::info!("(Send) Enqueued frame");
+                    Ok(())
+                }
+                false => Err(Error::NotConnected),
             })?
         }
+    }
+
+    fn _close_connection(&mut self, owner: &Reference, reason: impl ToVariant) {
+        log::info!("Closing connection");
+        self.connected = false;
+        self.cancellation_token.cancel();
+        owner.emit_signal("connection_closed", &[reason.to_variant()]);
     }
 
     #[method(async)]
@@ -179,12 +205,17 @@ impl GodotWebsocket {
         #[self] this: Instance<Self>,
     ) -> impl std::future::Future<Output = Result<(), Error>> + 'static {
         async move {
-            unsafe { this.assume_safe() }.map_mut(|s, _| {
-                loop {
-                    match s.inbound_rx.try_recv() {
-                        Ok(frame) => {
-                            let base = unsafe { this.assume_safe() }.base();
-                            match frame.opcode() {
+            unsafe { this.assume_safe() }.map_mut(|s, base| {
+                //Check if the job unexpectedly finished since the last poll
+                if s.connected && s.ws_job.is_finished() {
+                    log::info!("Connection closed unexpectedly");
+                    s._close_connection(&base, Error::ConnectionClosed);
+                }
+
+                if s.connected {
+                    loop {
+                        match s.inbound_rx.try_recv() {
+                            Ok(frame) => match frame.opcode() {
                                 yawc::OpCode::Ping => {}
                                 yawc::OpCode::Pong => {}
                                 yawc::OpCode::Continuation => {
@@ -201,13 +232,16 @@ impl GodotWebsocket {
                                     log::debug!("Got text frame with size {}", content.len());
                                     base.emit_signal("data_received", &[content.to_variant()]);
                                 }
+                            },
+                            Err(TryRecvError::Empty) => break,
+                            Err(TryRecvError::Disconnected) => {
+                                let job_is_finished = unsafe { this.assume_safe() }
+                                    .map_mut(|s, _| s.ws_job.is_finished())?;
+                                log::error!(
+                                    "Queue disconnected, job finished: {:?}",
+                                    job_is_finished
+                                );
                             }
-                        }
-                        Err(TryRecvError::Empty) => break,
-                        Err(TryRecvError::Disconnected) => {
-                            let job_is_finished = unsafe { this.assume_safe() }
-                                .map_mut(|s, _| s.ws_job.is_finished())?;
-                            log::error!("Queue disconnected, job finished: {:?}", job_is_finished);
                         }
                     }
                 }
