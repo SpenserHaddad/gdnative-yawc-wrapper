@@ -101,7 +101,6 @@ impl GodotWebsocketFactory {
                 cancellation_token.clone(),
             ));
             let ws = GodotWebsocket {
-                url: url,
                 inbound_rx: inbound_rx,
                 outbound_tx: outbound_tx,
                 ws_job: Rc::new(job),
@@ -127,9 +126,6 @@ impl GodotWebsocketFactory {
 #[inherit(Reference)]
 #[register_with(Self::register_signals)]
 pub struct GodotWebsocket {
-    #[property(get)]
-    #[variant(to_variant_with = "url::Url::to_string")]
-    url: url::Url,
     #[property(get)]
     connected: bool,
     #[variant(skip)]
