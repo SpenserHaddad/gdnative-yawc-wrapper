@@ -1,0 +1,35 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    env:
+      GODOT_STEAM_VERSION: v3.31
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download Godot
+      run: python tools/download_godot.py $GODOT_STEAM_VERSION
+
+    - name: Add godotsteam to path
+      run: echo "${{ github.workspace }}/godotsteam" >> $GITHUB_PATH
+
+    - name: Build
+      env:
+        GODOT_BIN: ${{ github.workspace }}/godotsteam
+      run: cargo build --verbose --release
