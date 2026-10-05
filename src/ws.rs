@@ -127,6 +127,7 @@ impl GodotWebsocketFactory {
 #[inherit(Reference)]
 #[register_with(Self::register_signals)]
 pub struct GodotWebsocket {
+    #[property(get)]
     #[variant(to_variant_with = "url::Url::to_string")]
     url: url::Url,
     #[property(get)]
@@ -161,14 +162,6 @@ impl GodotWebsocket {
             Ok(())
         } else {
             Err(Error::NotConnected)
-        }
-    }
-
-    #[method]
-    fn set_write_mode(&self, _mode: String) -> Result<(), Error> {
-        match self.connected {
-            true => Err(Error::ChangeSettingsWhileConnected),
-            false => Ok(()),
         }
     }
 
