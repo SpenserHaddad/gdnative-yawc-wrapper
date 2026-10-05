@@ -7,9 +7,6 @@ pub enum Error {
     #[error("Command run when not connected to server")]
     NotConnected,
 
-    #[error("Cannot change connection settings while connected.")]
-    ChangeSettingsWhileConnected,
-
     #[error("Connection closed unexpectedly")]
     ConnectionClosed,
 
