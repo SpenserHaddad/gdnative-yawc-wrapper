@@ -41,7 +41,6 @@ The created GDNative module exposes three classes:
   - `signal data_received(data: String)`: Emitted when a message is received from the server.
     Only occurs during when calling `poll()`.
   - `connected`: Read-only property indicating if the connection is alive.
-  - `url`: Read-only property of the URL of the connection.
   - `disconnect_from_host()`: Close the WebSocket connection.
   - `send(data: String)`: Send data over the WebSocket connection. (async)
   - `poll()`: Get and process any received messages from the server. (async)
