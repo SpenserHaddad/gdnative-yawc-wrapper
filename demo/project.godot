@@ -24,11 +24,6 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://ap/ap_websocket_connection.gd"
 }, {
-"base": "",
-"class": "BrotatoApClient",
-"language": "GDScript",
-"path": "res://ap/brotato_ap_client.gd"
-}, {
 "base": "Reference",
 "class": "BrotatoApConstants",
 "language": "GDScript",
@@ -43,21 +38,14 @@ _global_script_classes=[ {
 "class": "GodotApClientDebugSettings",
 "language": "GDScript",
 "path": "res://ap/debug.gd"
-}, {
-"base": "Node",
-"class": "GodotApClientNew",
-"language": "GDScript",
-"path": "res://ApClient.gd"
 } ]
 _global_script_class_icons={
 "ApBrotatoGameState": "",
 "ApTypes": "",
 "ApWebSocketConnection": "",
-"BrotatoApClient": "",
 "BrotatoApConstants": "",
 "GodotApClient": "",
-"GodotApClientDebugSettings": "",
-"GodotApClientNew": ""
+"GodotApClientDebugSettings": ""
 }
 
 [application]
